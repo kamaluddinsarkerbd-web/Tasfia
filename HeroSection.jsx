@@ -8,6 +8,12 @@ import { parseAIText } from '../utils/textParser';
 import { STAGE, AGE, CATEGORIES_BY_AGE, MOODS_BY_AGE, LANGUAGES } from '../constants';
 import SearchModal from './SearchModal';
 
+// ──────────────────── LESSON 6 ────────────────────
+// TODO: Import MovieStrip from './MovieStrip'
+// ──────────────────── STUBS: delete after adding real code ────────────────
+// (no stub needed — just add the import above)
+// ──────────────────── END ─────────────────────────
+
 
 function TypingDots() {
   return (
@@ -25,6 +31,12 @@ function SpecialContent({ content }) {
   const [cats,  setCats]  = useState([]);
   const [langs, setLangs] = useState(['Any Language']);
   const { type } = content;
+
+  // ──────────────────── LESSON 6 ────────────────────
+  // TODO: Add movie-strip case — render <MovieStrip movies={content.movies} />
+  // ──────────────────── STUBS: delete after adding real code ────────────────
+  // if (type === 'movie-strip') return <MovieStrip movies={content.movies} />;
+  // ──────────────────── END ─────────────────────────
 
   if (type === 'mood-greeting') return (
     <div className="choice-row">
@@ -141,7 +153,7 @@ export default function ChatPage() {
     stage, setStage, chatMsgs, addMsg, isBotTyping, setIsBotTyping,
     userName, setUserName, userAge, setUserAge, userMood, setUserMood,
     userCategories, setUserCategories, setUserLanguage,
-    callAI, callAIWithSearch, switchAge, isRestricted,
+    callAI, callAIWithSearch, searchForStrip, switchAge, isRestricted,
   } = useApp();
 
   const [inputVal,    setInputVal]    = useState('');
@@ -217,21 +229,20 @@ export default function ChatPage() {
     try {
       const lc = langs.includes('Any Language') ? 'any language' : langs.join(' or ');
       const prompt = userAge === AGE.KIDS
-        ? `Recommend 3 great G/PG animated family movies for a child under 13. Language: ${lc}.`
+        ? `Recommend 3 great G/PG animated family movies for a child under 13. Language: ${lc}. Genres: ${userCategories.join(', ')}.`
+        : userAge === AGE.TEEN
+        ? `Recommend 3 great PG/PG-13 movies for a teenager. Language: ${lc}. Mood: "${userMood}". Genres: ${userCategories.join(', ')}.`
         : `Recommend 3 great movies in ${lc} for mood: "${userMood}" and genres: ${userCategories.join(', ')}.`;
-      const { reply } = await callAIWithSearch(prompt);
-      addMsg('bot', reply || 'Here are some picks for you! 🎬');
+      const { reply, movieResults } = await callAIWithSearch(prompt);
+      addMsg('bot', reply || 'Here are some picks for you!');
+      // ──────────────────── LESSON 6 ────────────────────
+      // TODO: Show movie strip if movieResults.length > 0
+      // if (movieResults.length) addMsg('bot', { type: 'movie-strip', movies: movieResults });
+      // ──────────────────── END ─────────────────────────
     } catch { addMsg('bot', 'Something went wrong. Try asking me directly!'); }
     finally { setIsBotTyping(false); }
   }
 
-
-  // ──────────────────── LESSON 5 ────────────────────
-  // TODO: Write handleSend() — replace the stub below with real Groq AI
-  //   - In STAGE.CHAT: check isRestricted(msg), then call callAIWithSearch(msg)
-  // TODO: Define CHIPS object with 4 quick-suggestion labels and prompts
-  // TODO: Write handleChip(chip) — call callAIWithSearch with the chip prompt
-  // ──────────────────── STUBS: delete after adding real code ────────────────
   async function handleSend() {
     const msg = inputVal.trim();
     if (!msg || isBotTyping) return;
@@ -239,27 +250,48 @@ export default function ChatPage() {
     if (stage === STAGE.NAME)       { handleNameSubmit(msg); return; }
     if (stage === STAGE.GREET_MOOD) { setInputActive(false); addMsg('user', msg); handleGreetingMood(msg); return; }
     if (stage !== STAGE.CHAT)       return;
+    if (isRestricted(msg))          { addMsg('bot', 'Please ask me about movies only! 🎬'); return; }
     addMsg('user', msg); setInputActive(false); setIsBotTyping(true);
     try {
-      const { reply } = await callAIWithSearch(msg);
-      addMsg('bot', reply || 'Use the 🔍 search icon to find movies!');
+      const { reply, movieResults, hasAgeSwitchOffer } = await callAIWithSearch(msg);
+      addMsg('bot', reply || 'Let me think... try asking again!');
+      // ──────────────────── LESSON 6 ────────────────────
+      // TODO: Show movie strip and age-switch offer if present
+      // if (movieResults.length) addMsg('bot', { type: 'movie-strip', movies: movieResults });
+      // if (hasAgeSwitchOffer)   addMsg('bot', { type: 'age-switch-offer' });
+      // ──────────────────── END ─────────────────────────
     } catch { addMsg('bot', 'Something went wrong. Try again!'); }
     finally { setIsBotTyping(false); setInputActive(true); }
   }
+
   const CHIPS = {
-    'Hidden gems':   'What are some underrated hidden gem movies?',
-    'Latest movies': 'Recommend great movies from the last 2 years.',
-    'Top picks':     'What are your top movie picks right now?',
+    'Hidden gems':         'What are some underrated hidden gem movies?',
+    'Latest movies':       'Recommend great movies from the last 2 years.',
+    'Something different': 'Recommend something completely different.',
+    'Top picks':           'What are your top movie picks right now?',
   };
+
   async function handleChip(chip) {
     addMsg('user', chip); setIsBotTyping(true);
     try {
-      const { reply } = await callAIWithSearch(CHIPS[chip]);
+      const { reply, movieResults } = await callAIWithSearch(CHIPS[chip]);
       addMsg('bot', reply || 'Here are my picks!');
+      // ──────────────────── LESSON 6 ────────────────────
+      // TODO: Show movie strip if movieResults.length > 0
+      // if (movieResults.length) addMsg('bot', { type: 'movie-strip', movies: movieResults });
+      // ──────────────────── END ─────────────────────────
     } finally { setIsBotTyping(false); }
   }
-  // ──────────────────── END ─────────────────────────
 
+  // ──────────────────── LESSON 6 ────────────────────
+  // TODO: Write renderMsg(msg) — pass onMovieClick so **bold** titles become
+  //   clickable chips. When clicked: call callAIWithSearch + searchForStrip,
+  //   then show the reply and a movie-strip with the results.
+  // ──────────────────── STUBS: delete after adding real code ────────────────
+  function renderMsg(msg) {
+    return <ChatRow key={msg.id} msg={msg} onMovieClick={null} />;
+  }
+  // ──────────────────── END ─────────────────────────
 
   return (
     <div className="chat-page">
@@ -294,21 +326,18 @@ export default function ChatPage() {
       </div>
 
       <div className="chat-messages-area">
-        {chatMsgs.map(msg => <ChatRow key={msg.id} msg={msg} onMovieClick={null} />)}
+        {chatMsgs.map(renderMsg)}
         {isBotTyping && <TypingDots />}
         <div ref={msgsEndRef} />
       </div>
 
-      {/* ──────────────────── LESSON 5 ──────────────────── */}
-      {/* TODO: Render suggestion chips — uncomment after writing CHIPS + handleChip */}
-      {/* {stage === STAGE.CHAT && !isBotTyping && (
+      {stage === STAGE.CHAT && !isBotTyping && (
         <div className="chat-chips">
           {Object.keys(CHIPS).map(c => (
             <button key={c} className="ai-suggestion-chip" onClick={() => handleChip(c)}>{c}</button>
           ))}
         </div>
-      )} */}
-      {/* ──────────────────── END ─────────────────────────── */}
+      )}
 
       <div className="chat-input-bar">
         <input type="text" className="chat-text-input"
