@@ -1,0 +1,5 @@
+print("First of all, i wake up at 5:45")
+print("Then i rub my eyes and then pray my fazar prayer")
+print("Then i study.")
+print("After that, i sleep again.")
+print("At 7am i wake up again and get ready for school.")
