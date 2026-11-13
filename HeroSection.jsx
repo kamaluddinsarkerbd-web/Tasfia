@@ -7,6 +7,7 @@ import { useApp } from '../context/AppContext';
 import { parseAIText } from '../utils/textParser';
 import { STAGE, AGE, CATEGORIES_BY_AGE, MOODS_BY_AGE, LANGUAGES } from '../constants';
 import SearchModal from './SearchModal';
+import MovieStrip from './MovieStrip';
 
 // ──────────────────── LESSON 6 ────────────────────
 // TODO: Import MovieStrip from './MovieStrip'
@@ -33,7 +34,7 @@ function SpecialContent({ content }) {
   const { type } = content;
 
   // ──────────────────── LESSON 6 ────────────────────
-  // TODO: Add movie-strip case — render <MovieStrip movies={content.movies} />
+  if (type === 'movie-strip') return <MovieStrip movies={content.movies} />;
   // ──────────────────── STUBS: delete after adding real code ────────────────
   // if (type === 'movie-strip') return <MovieStrip movies={content.movies} />;
   // ──────────────────── END ─────────────────────────
@@ -236,7 +237,8 @@ export default function ChatPage() {
       const { reply, movieResults } = await callAIWithSearch(prompt);
       addMsg('bot', reply || 'Here are some picks for you!');
       // ──────────────────── LESSON 6 ────────────────────
-      // TODO: Show movie strip if movieResults.length > 0
+      if (movieResults.length) addMsg('bot' {type: 'movie-strip' , movies: movieResults});
+      if (hasAgeSwitchOffer) addMsg('bot', {type: 'age-switch-offer'});
       // if (movieResults.length) addMsg('bot', { type: 'movie-strip', movies: movieResults });
       // ──────────────────── END ─────────────────────────
     } catch { addMsg('bot', 'Something went wrong. Try asking me directly!'); }
